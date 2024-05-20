@@ -1,17 +1,14 @@
-import styled from 'styled-components';
-import { HiPencil, HiTrash, HiSquare2Stack } from 'react-icons/hi2';
+import styled from "styled-components";
+import { formatCurrency } from "../../utils/helpers";
+import CreateCabinForm from "./CreateCabinForm";
+import { useDeleteCabin } from "./useDeleteCabin";
+import { HiPencil, HiSquare2Stack, HiTrash } from "react-icons/hi2";
+import { useCreateCabin } from "./useCreateCabin";
+import Modal from "../../ui/Modal";
+import ConfirmDelete from "../../ui/ConfirmDelete";
+import Table from "../../ui/Table";
+import Menus from "../../ui/Menus";
 
-import Menus from 'ui/Menus';
-import Modal from 'ui/Modal';
-import ConfirmDelete from 'ui/ConfirmDelete';
-import Table from 'ui/Table';
-
-import { formatCurrency } from 'utils/helpers';
-import { useDeleteCabin } from './useDeleteCabin';
-import { useCreateCabin } from './useCreateCabin';
-import CreateCabinForm from './CreateCabinForm';
-
-// v1
 // const TableRow = styled.div`
 //   display: grid;
 //   grid-template-columns: 0.6fr 1.8fr 2.2fr 1fr 1fr 1fr;
@@ -38,39 +35,40 @@ const Cabin = styled.div`
   font-size: 1.6rem;
   font-weight: 600;
   color: var(--color-grey-600);
-  font-family: 'Sono';
+  font-family: "Sono";
 `;
 
 const Price = styled.div`
-  font-family: 'Sono';
+  font-family: "Sono";
   font-weight: 600;
 `;
 
 const Discount = styled.div`
-  font-family: 'Sono';
+  font-family: "Sono";
   font-weight: 500;
   color: var(--color-green-700);
 `;
 
 function CabinRow({ cabin }) {
+  const { isDeleting, deleteCabin } = useDeleteCabin();
+
+  const { isCreating, createCabinMutate } = useCreateCabin();
+
   const {
     id: cabinId,
     name,
-    maxCapacity,
-    regularPrice,
+    maxcapacity,
+    regularprice,
     discount,
     image,
     description,
   } = cabin;
 
-  const { mutate: deleteCabin, isLoading: isDeleting } = useDeleteCabin();
-  const { mutate: createCabin } = useCreateCabin();
-
   function handleDuplicate() {
-    createCabin({
-      name: `${name} duplicate`,
-      maxCapacity,
-      regularPrice,
+    createCabinMutate({
+      name: `Copy of ${name}`,
+      maxcapacity,
+      regularprice,
       discount,
       image,
       description,
@@ -78,68 +76,48 @@ function CabinRow({ cabin }) {
   }
 
   return (
-    <Table.Row role='row'>
-      <Img src={image} alt={`Cabin ${name}`} />
-
+    <Table.Row columns="0.6fr 1.8fr 2.2fr 1fr 1fr 1fr">
+      <Img src={image} />
       <Cabin>{name}</Cabin>
-
-      <div>Fits up to {maxCapacity} guests</div>
-
-      <Price>{formatCurrency(regularPrice)}</Price>
-
+      <div>Fits Up to {maxcapacity}</div>
+      <Price>{formatCurrency(regularprice)}</Price>
       {discount ? (
         <Discount>{formatCurrency(discount)}</Discount>
       ) : (
         <span>&mdash;</span>
       )}
+      <div>
+        <Modal>
+          <Menus.Menu>
+            <Menus.Toggle id={cabinId} />
 
-      <Modal>
-        <Menus.Menu>
-          <Menus.Toggle id={cabinId} />
+            <Menus.List id={cabinId}>
+              <Menus.Button icon={<HiSquare2Stack />} onClick={handleDuplicate}>
+                Duplicate
+              </Menus.Button>
 
-          <Menus.List id={cabinId}>
-            <Menus.Button icon={<HiSquare2Stack />} onClick={handleDuplicate}>
-              Duplicate
-            </Menus.Button>
+              <Modal.Open opens="edit">
+                <Menus.Button icon={<HiPencil />}>Edit</Menus.Button>
+              </Modal.Open>
+              <Modal.Open opens="delete">
+                <Menus.Button icon={<HiTrash />}>Delete</Menus.Button>
+              </Modal.Open>
+            </Menus.List>
 
-            <Modal.Toggle opens='edit'>
-              <Menus.Button icon={<HiPencil />}>Edit cabin</Menus.Button>
-            </Modal.Toggle>
+            <Modal.Window name="edit">
+              <CreateCabinForm cabinToEdit={cabin} />
+            </Modal.Window>
 
-            {/* Now it gets a bit confusing... */}
-            <Modal.Toggle opens='delete'>
-              <Menus.Button icon={<HiTrash />}>Delete cabin</Menus.Button>
-            </Modal.Toggle>
-          </Menus.List>
-        </Menus.Menu>
-
-        {/* This needs to be OUTSIDE of the menu, which in no problem. The compound component gives us this flexibility */}
-        <Modal.Window name='edit'>
-          <CreateCabinForm cabinToEdit={cabin} />
-        </Modal.Window>
-
-        <Modal.Window name='delete'>
-          <ConfirmDelete
-            resource='cabin'
-            onConfirm={() => deleteCabin(cabinId)}
-            disabled={isDeleting}
-          />
-        </Modal.Window>
-      </Modal>
-
-      {/* <div>
-        <ButtonWithConfirm
-          title='Delete cabin'
-          description='Are you sure you want to delete this cabin? This action can NOT be undone.'
-          confirmBtnLabel='Delete'
-          onConfirm={() => deleteCabin(cabinId)}
-          disabled={isDeleting}
-        >
-          Delete
-        </ButtonWithConfirm>
-
-        <Link to={`/cabins/${cabinId}`}>Details &rarr;</Link>
-      </div> */}
+            <Modal.Window name="delete">
+              <ConfirmDelete
+                resource="cabins"
+                disabled={isDeleting}
+                onConfirm={() => deleteCabin(cabinId)}
+              />
+            </Modal.Window>
+          </Menus.Menu>
+        </Modal>
+      </div>
     </Table.Row>
   );
 }
